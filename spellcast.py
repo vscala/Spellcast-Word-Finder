@@ -44,7 +44,7 @@ class WordBoard:
 		def backtrack(i, j, letters):
 			if not letters: return True
 			if self.board[i][j] != letters[0]: 
-				if self.skips and board[i][j] != '.': self.skips -= 1
+				if self.skips and self.board[i][j] != '.': self.skips -= 1
 				else: return False
 			if i == x and j == y:
 				self.hitXY = True
@@ -80,8 +80,8 @@ class WordBoard:
 		#Iterate over board
 		for i in range(n):
 			for j in range(m):
-				if board[i][j] == word: return True
-				if board[i][j] == word[0]:
+				if self.board[i][j] == word: return True
+				if self.board[i][j] == word[0]:
 					if backtrack(i, j, word):
 						return True   
 	
@@ -91,23 +91,23 @@ class WordBoard:
 			if cur:
 				yield (word, value, cur)
 
+if __name__ == "__main__":
+	# Read board and create wordboard
+	board = [[c.lower() for c in input()] for _ in range(5)]
+	wb = WordBoard()
+	wb.setBoard(board)
 
-# Read board and create wordboard
-board = [[c.lower() for c in input()] for _ in range(5)]
-wb = WordBoard()
-wb.setBoard(board)
+	# Find best words
+	wg = wb.generateWords()		# no swaps
+	wgS1 = wb.generateWords(1)	# one swap
+	wgS2 = wb.generateWords(2)	# two swaps
 
-# Find best word(s)
-wg = wb.generateWords()
-wgS1 = wb.generateWords(1)
-wgS2 = wb.generateWords(2)
+	#x, y = map(int, input().split())
+	#wgXY = wb.generateWords(x=x, y=y)
 
-#x, y = map(int, input().split())
-#wgXY = wb.generateWords(x=x, y=y)
-
-print("No swaps:", next(wg))
-print("One swap:", next(wgS1))
-print("Two swaps:", next(wgS2))
+	print("No swaps:", next(wg))
+	print("One swap:", next(wgS1))
+	print("Two swaps:", next(wgS2))
 
 
 
