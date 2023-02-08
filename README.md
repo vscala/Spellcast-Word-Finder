@@ -13,3 +13,6 @@ Attempts to find the best word in the discord activity (game) Spellcast
 ## TODO
  - Add word/letter multipliers
  - Image Recognition
+
+## Credits
+- [words.txt](https://github.com/jacksonrayhamilton/wordlist-english)
