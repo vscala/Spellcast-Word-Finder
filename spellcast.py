@@ -37,7 +37,7 @@ LETTERVALS = (
 
 class WordBoard:
     def __init__(self):
-        with open("words.txt") as f:
+        with open("words.txt", encoding="utf-8") as f:
             self.words = [word[:-1] for word in f.readlines()]
 
     def recalculate(self):
