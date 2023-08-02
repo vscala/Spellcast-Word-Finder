@@ -1,39 +1,13 @@
-# SpellCast
-
 from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain, product
 
-LETTERS = "abcdefghijklmnopqrstuvwxyz"
-LETTERVALS = (
-    1,
-    4,
-    5,
-    3,
-    1,
-    5,
-    3,
-    4,
-    1,
-    7,
-    3,
-    3,
-    4,
-    2,
-    1,
-    4,
-    8,
-    2,
-    2,
-    2,
-    4,
-    5,
-    5,
-    7,
-    4,
-    8,
-)
-
+LETTERS_AND_VALUES = {
+    "a": 1, "b": 4, "c": 5, "d": 3, "e": 1, "f": 5, "g": 3, "h": 4,
+    "i": 1, "j": 7, "k": 3, "l": 3, "m": 4, "n": 2, "o": 1, "p": 4,
+    "q": 8, "r": 2, "s": 2, "t": 2, "u": 4, "v": 5, "w": 5, "x": 7,
+    "y": 4, "z": 8,
+}
 
 class WordBoard:
     def __init__(self):
@@ -50,19 +24,17 @@ class WordBoard:
                 self.letterMultipliers[(i, j)],
             )
 
-        self.letterVals = [
-            v * maxCharMultiplier[LETTERS[i]] for i, v in enumerate(LETTERVALS)
-        ]
+        self.letterVals = {
+            letter: val * maxCharMultiplier[letter] for letter, val in LETTERS_AND_VALUES.items()
+        }
         self.boardValue = {}
         for i, j in product(range(5), range(5)):
-            self.boardValue[(i, j)] = self.letterVals[
-                ord(self.board[i][j].lower()) - ord("a")
-            ]
+            self.boardValue[(i, j)] = self.letterVals[self.board[i][j].lower()]
+
         self.value = lambda word: sum(
-            self.letterVals[ord(c.lower()) - ord("a")]
-            for c in word
-            if c.lower() in LETTERS
+            self.letterVals[c.lower()] for c in word if c.lower() in LETTERS_AND_VALUES
         ) + (10 if len(word) > 6 else 0)
+
         self.wordValues = [(self.value(word), word) for word in self.words]
         self.wordValues.sort(reverse=True)
 
@@ -142,7 +114,7 @@ class WordBoard:
                     value = (
                         self.letterMultipliers[(i, j)]
                         * self.wordMultipliers[(i, j)]
-                        * LETTERVALS[ord(word[0].lower()) - ord("a")]
+                        * LETTERS_AND_VALUES[word[0].lower()]
                     )
                     if value > best:
                         out = ([(i, j)], value, [])
@@ -155,8 +127,7 @@ class WordBoard:
                         )
                         value = (
                             sum(
-                                self.letterMultipliers[x]
-                                * LETTERVALS[ord(word[ind].lower()) - ord("a")]
+                                self.letterMultipliers[x] * LETTERS_AND_VALUES[word[ind].lower()]
                                 for ind, x in enumerate(path[::-1])
                             )
                             * wordMultiplier
