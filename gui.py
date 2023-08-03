@@ -1,11 +1,11 @@
 import tkinter as tk
 import tkinter.font as tkFont
-from spellcast import *
+from spellcast import WordBoard
 
 
 class App:
     def __init__(self, root):
-        self.wb = WordBoard()
+        self.word_board = WordBoard()
 
         root.title("Spellcast Word Finder")
         width = 600
@@ -101,7 +101,7 @@ class App:
                     highlightbackground="blue",
                     highlightcolor="blue",
                     background="blue",
-                    font=("Roboto", 20, tk.font.BOLD),
+                    font=("Roboto", 20, tkFont.BOLD),
                     fg="white",
                 )
                 if (i, j) in self.skipset:
@@ -112,7 +112,7 @@ class App:
                     highlightbackground="red",
                     highlightcolor="red",
                     background="red",
-                    font=("Roboto", 20, tk.font.BOLD),
+                    font=("Roboto", 20, tkFont.BOLD),
                     fg="white",
                 )
 
@@ -122,17 +122,17 @@ class App:
                     highlightbackground="black",
                     highlightcolor="black",
                     background="white",
-                    font=("Roboto", 16, tk.font.NORMAL),
+                    font=("Roboto", 16, tkFont.NORMAL),
                     fg="black",
                 )
                 self.vals[i][j].set(self.temp[i][j])
 
     def button_command(self):
         board = [[v.get().lower() for v in line] for line in self.vals]
-        self.wb.setBoard(board)
+        self.word_board.setBoard(board)
 
         words = [
-            self.wb.bestWord(i) for i in range(3)  # (best word, value, path, skipped)
+            self.word_board.bestWord(i) for i in range(3)  # (best word, value, path, skipped)
         ]
 
         wordLabelPrefix = ["No swaps", "One swap", "Two swaps"]
@@ -150,10 +150,10 @@ class App:
 	"""
 
     def addMultiplier(self, i, j, word=False):
-        self.wb.addMultiplier(i, j, 1)
+        self.word_board.addMultiplier(i, j, 1)
 
     def removeMultiplier(self, i, j):
-        self.wb.removeMultiplier(i, j)
+        self.word_board.removeMultiplier(i, j)
 
 
 if __name__ == "__main__":
