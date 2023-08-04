@@ -3,112 +3,116 @@ import tkinter.font as tkFont
 from spellcast import WordBoard
 
 
-class App:
-    def __init__(self, root):
+class SpellcastApp:
+    def __init__(self, app_window):
         self.word_board = WordBoard()
 
-        root.title("Spellcast Word Finder")
+        app_window.title("Spellcast Word Finder")
         width = 600
         height = 256
-        screenwidth = root.winfo_screenwidth()
-        screenheight = root.winfo_screenheight()
-        alignstr = "%dx%d+%d+%d" % (
+        screen_width = app_window.winfo_screenwidth()
+        screen_height = app_window.winfo_screenheight()
+        window_position = "%dx%d+%d+%d" % (
             width,
             height,
-            (screenwidth - width) / 2,
-            (screenheight - height) / 2,
+            (screen_width - width) / 2,
+            (screen_height - height) / 2,
         )
-        root.geometry(alignstr)
-        root.resizable(width=False, height=False)
+        app_window.geometry(window_position)
+        app_window.resizable(width=False, height=False)
 
-        self.vals = [
-            [tk.StringVar(root, value="") for __ in range(5)] for _ in range(5)
+        self.values = [
+            [tk.StringVar(app_window, value="") for _ in range(5)] for _ in range(5)
         ]
-        self.lineInput = []
+        self.line_inputs = []
         self.labels = []
 
-        def on_validate(p, i, j):
-            i, j = map(int, (i, j))
-            ind = (i * 5 + j + 1) % 25
-            if len(p) == 1:
-                self.lineInput[ind].focus_set()
-                self.lineInput[ind].select_range(0, "end")
+        def on_validate(new_value, row, column):
+            row, column = map(int, (row, column))
+            index = (row * 5 + column + 1) % 25
+            if len(new_value) == 1:
+                self.line_inputs[index].focus_set()
+                self.line_inputs[index].select_range(0, "end")
             return True
 
-        xoff, yoff = 25, 25
-        for i in range(5):
-            for j in range(5):
-                self.lineInput += [
-                    tk.Entry(
-                        root,
-                        textvariable=self.vals[i][j],
-                        validate="key",
-                        highlightthickness=2,
-                    )
-                ]
-                self.lineInput[-1]["borderwidth"] = "1px"
-                self.lineInput[-1]["font"] = tkFont.Font(family="Times", size=10)
-                self.lineInput[-1]["fg"] = "#333333"
-                self.lineInput[-1]["justify"] = "center"
-                self.lineInput[-1]["validatecommand"] = (
-                    self.lineInput[-1].register(on_validate),
+        x_offset, y_offset = 25, 25
+        for row in range(5):
+            for column in range(5):
+                entry = tk.Entry(
+                    app_window,
+                    textvariable=self.values[row][column],
+                    validate="key",
+                    highlightthickness=2,
+                )
+                entry["borderwidth"] = "1px"
+                entry["font"] = tkFont.Font(family="Times", size=10)
+                entry["fg"] = "#333333"
+                entry["justify"] = "center"
+                entry["validatecommand"] = (
+                    entry.register(on_validate),
                     "%P",
-                    i,
-                    j,
+                    row,
+                    column,
                 )
-                self.lineInput[-1].place(
-                    x=xoff + j * 32, y=yoff + i * 32, width=32, height=32
+                entry.place(
+                    x=x_offset + column * 32, y=y_offset + row * 32, width=32, height=32
                 )
-                self.lineInput[-1].configure(
+                entry.configure(
                     highlightbackground="black",
                     highlightcolor="black",
                     font=("Roboto", 16),
                 )
+                self.line_inputs.append(entry)
 
-        for i in range(3):
-            self.labels += [tk.Label(root)]
-            self.labels[-1]["font"] = tkFont.Font(family="Times", size=10)
-            self.labels[-1]["fg"] = "#333333"
-            self.labels[-1]["justify"] = "center"
-            self.labels[-1]["text"] = f""
-            self.labels[-1].place(x=320, y=80 + i * 30, width=250, height=25)
+        for row in range(3):
+            label = tk.Label(app_window)
+            label["font"] = tkFont.Font(family="Times", size=10)
+            label["fg"] = "#333333"
+            label["justify"] = "center"
+            label["text"] = ""
+            label.place(x=320, y=80 + row * 30, width=250, height=25)
+            self.labels.append(label)
 
-        self.button = tk.Button(root)
-        self.button["bg"] = "#e9e9ed"
-        self.button["font"] = tkFont.Font(family="Times", size=10)
-        self.button["fg"] = "#000000"
-        self.button["justify"] = "center"
-        self.button["text"] = "Generate Words"
-        self.button.place(x=xoff, y=yoff + 160, width=160, height=25)
-        self.button["command"] = self.button_command
+        button = tk.Button(app_window)
+        button["bg"] = "#e9e9ed"
+        button["font"] = tkFont.Font(family="Times", size=10)
+        button["fg"] = "#000000"
+        button["justify"] = "center"
+        button["text"] = "Generate Words"
+        button.place(x=x_offset, y=y_offset + 160, width=160, height=25)
+        button["command"] = self.generate_words_command
 
-    class lblHover:
-        def __init__(self, label, path, skipped, lineInput, vals, word):
+    class LabelHover:
+        def __init__(self, label, path, skipped, line_inputs, values, word):
             self.label = label
             self.path = path
             self.skipped = skipped
-            self.skipset = set(skipped)
-            self.lineInput = lineInput
+            self.skip_set = set(skipped)
+            self.line_inputs = line_inputs
             self.label.bind("<Enter>", lambda _: self.hover())
             self.label.bind("<Leave>", lambda _: self.unhover())
-            self.vals = vals
-            self.temp = [[v.get().lower() for v in line] for line in self.vals]
+            self.values = values
+            self.temporary = [
+                [value.get().lower() for value in line] for line in self.values
+            ]
             self.word = word
 
         def hover(self):
             for (i, j), c in zip(self.path[::-1], self.word):
-                self.lineInput[i * 5 + j].configure(
+                entry_index = i * 5 + j
+                self.line_inputs[entry_index].configure(
                     highlightbackground="blue",
                     highlightcolor="blue",
                     background="blue",
                     font=("Roboto", 20, tkFont.BOLD),
                     fg="white",
                 )
-                if (i, j) in self.skipset:
-                    self.vals[i][j].set(c)
+                if (i, j) in self.skip_set:
+                    self.values[i][j].set(c)
 
             for i, j in self.skipped:
-                self.lineInput[i * 5 + j].configure(
+                entry_index = i * 5 + j
+                self.line_inputs[entry_index].configure(
                     highlightbackground="red",
                     highlightcolor="red",
                     background="red",
@@ -118,45 +122,41 @@ class App:
 
         def unhover(self):
             for i, j in self.path + self.skipped:
-                self.lineInput[i * 5 + j].configure(
+                entry_index = i * 5 + j
+                self.line_inputs[entry_index].configure(
                     highlightbackground="black",
                     highlightcolor="black",
                     background="white",
                     font=("Roboto", 16, tkFont.NORMAL),
                     fg="black",
                 )
-                self.vals[i][j].set(self.temp[i][j])
+                self.values[i][j].set(self.temporary[i][j])
 
-    def button_command(self):
-        board = [[v.get().lower() for v in line] for line in self.vals]
-        self.word_board.setBoard(board)
+    def generate_words_command(self):
+        board = [[v.get().lower() for v in line] for line in self.values]
+        self.word_board.set_board(board)
 
         words = [
-            self.word_board.bestWord(i) for i in range(3)  # (best word, value, path, skipped)
+            self.word_board.best_word(i)
+            for i in range(3)  # (best word, value, path, skipped)
         ]
 
-        wordLabelPrefix = ["No swaps", "One swap", "Two swaps"]
+        word_label_prefix = ["No swaps", "One swap", "Two swaps"]
 
         for i, word in enumerate(words):
-            self.labels[i]["text"] = f"{wordLabelPrefix[i]}: {word[:2]}"
-            self.lblHover(
-                self.labels[i], word[2], word[3], self.lineInput, self.vals, word[0]
+            self.labels[i]["text"] = f"{word_label_prefix[i]}: {word[:2]}"
+            self.LabelHover(
+                self.labels[i], word[2], word[3], self.line_inputs, self.values, word[0]
             )
 
-    """
-		TODO implement
-			should allow user to input multiplier amount and cell
-			should update spellcast board to account for multiplier
-	"""
+    def add_multiplier(self, row, col, word=False):
+        self.word_board.add_multiplier(row, col, 1)
 
-    def addMultiplier(self, i, j, word=False):
-        self.word_board.addMultiplier(i, j, 1)
-
-    def removeMultiplier(self, i, j):
-        self.word_board.removeMultiplier(i, j)
+    def remove_multiplier(self, row, col):
+        self.word_board.remove_multiplier(row, col)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = App(root)
+    app = SpellcastApp(root)
     root.mainloop()
