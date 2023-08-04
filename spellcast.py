@@ -3,178 +3,203 @@ from functools import reduce
 from itertools import chain, product
 
 LETTERS_AND_VALUES = {
-    "a": 1, "b": 4, "c": 5, "d": 3, "e": 1, "f": 5, "g": 3, "h": 4,
-    "i": 1, "j": 7, "k": 3, "l": 3, "m": 4, "n": 2, "o": 1, "p": 4,
-    "q": 8, "r": 2, "s": 2, "t": 2, "u": 4, "v": 5, "w": 5, "x": 7,
-    "y": 4, "z": 8,
+    "a": 1,
+    "b": 4,
+    "c": 5,
+    "d": 3,
+    "e": 1,
+    "f": 5,
+    "g": 3,
+    "h": 4,
+    "i": 1,
+    "j": 7,
+    "k": 3,
+    "l": 3,
+    "m": 4,
+    "n": 2,
+    "o": 1,
+    "p": 4,
+    "q": 8,
+    "r": 2,
+    "s": 2,
+    "t": 2,
+    "u": 4,
+    "v": 5,
+    "w": 5,
+    "x": 7,
+    "y": 4,
+    "z": 8,
 }
+
 
 class WordBoard:
     def __init__(self):
-        with open("words.txt", encoding="utf-8") as f:
-            self.words = [word[:-1] for word in f.readlines()]
+        with open("words.txt", encoding="utf-8") as file:
+            self.words = [word[:-1] for word in file.readlines()]
 
     def recalculate(self):
-        maxGlobalMultiplier = max(self.wordMultipliers.values(), default=1)
-        maxCharMultiplier = defaultdict(lambda: 1)
-        for i, j in product(range(5), range(5)):
-            maxCharMultiplier[self.board[i][j]] = max(
-                maxCharMultiplier[self.board[i][j]],
-                maxGlobalMultiplier,
-                self.letterMultipliers[(i, j)],
+        max_global_multiplier = max(self.word_multipliers.values(), default=1)
+        max_character_multiplier = defaultdict(lambda: 1)
+        for row, column in product(range(5), range(5)):
+            max_character_multiplier[self.board[row][column]] = max(
+                max_character_multiplier[self.board[row][column]],
+                max_global_multiplier,
+                self.letter_multipliers[(row, column)],
             )
 
-        self.letterVals = {
-            letter: val * maxCharMultiplier[letter] for letter, val in LETTERS_AND_VALUES.items()
+        self.letter_values = {
+            letter: val * max_character_multiplier[letter]
+            for letter, val in LETTERS_AND_VALUES.items()
         }
-        self.boardValue = {}
-        for i, j in product(range(5), range(5)):
-            self.boardValue[(i, j)] = self.letterVals[self.board[i][j].lower()]
+        self.board_value = {}
+        for row, column in product(range(5), range(5)):
+            self.board_value[(row, column)] = self.letter_values[
+                self.board[row][column].lower()
+            ]
 
-        self.value = lambda word: sum(
-            self.letterVals[c.lower()] for c in word if c.lower() in LETTERS_AND_VALUES
+        self.calculate_value = lambda word: sum(
+            self.letter_values[character.lower()]
+            for character in word
+            if character.lower() in LETTERS_AND_VALUES
         ) + (10 if len(word) > 6 else 0)
 
-        self.wordValues = [(self.value(word), word) for word in self.words]
-        self.wordValues.sort(reverse=True)
+        self.word_values = [(self.calculate_value(word), word) for word in self.words]
+        self.word_values.sort(reverse=True)
 
-    def setBoard(self, board):
+    def set_board(self, board):
         self.board = board
-        self.n = len(board)
-        self.m = len(board[0])
-        self.totalCount = Counter(chain(*board))
+        self.row_count = len(board)
+        self.column_count = len(board[0])
+        self.total_count = Counter(cell for row in board for cell in row)
 
-        self.wordMultipliers = defaultdict(lambda: 1)  # word multiplier at (i, j)
-        self.letterMultipliers = defaultdict(lambda: 1)  # letter multiplier at (i, j)
+        self.word_multipliers = defaultdict(lambda: 1)
+        self.letter_multipliers = defaultdict(lambda: 1)
         self.recalculate()
 
     def precheck(self, word):
-        wCount = Counter(word)
-        for c in wCount:
-            if wCount[c] > self.totalCount[c]:
+        word_count = Counter(word)
+        for character in word_count:
+            if word_count[character] > self.total_count[character]:
                 return False
         return True
 
-    # returns (path, actualValue, skipped)
-    def boardContains(self, word, skips=0):
-        n, m = self.n, self.m
+    def board_contains(self, word, skips=0):
+        row_count, column_count = self.row_count, self.column_count
         if not skips and not self.precheck(word):
             return ([], 0, [])
 
-        def backtrack(i, j, letters):
-            if not letters:
+        def backtrack(row, column, remaining_letters):
+            if not remaining_letters:
                 return True
-            if self.board[i][j] != letters[0]:
-                if self.skips and self.board[i][j] != ".":
+            if self.board[row][column] != remaining_letters[0]:
+                if self.skips and self.board[row][column] != ".":
                     self.skips -= 1
                 else:
                     return False
 
-            temp, self.board[i][j] = self.board[i][j], "."
+            temp, self.board[row][column] = self.board[row][column], "."
             out = False
-            if i + 1 < n:
-                out = out or backtrack(i + 1, j, letters[1:])  # +1, 0
-                if j + 1 < m:
-                    out = out or backtrack(i + 1, j + 1, letters[1:])  # +1, +1
-                if j > 0:
-                    out = out or backtrack(i + 1, j - 1, letters[1:])  # +1, -1
-            if i > 0:
-                out = out or backtrack(i - 1, j, letters[1:])  # -1, 0
-                if j + 1 < m:
-                    out = out or backtrack(i - 1, j + 1, letters[1:])  # -1, +1
-                if j > 0:
-                    out = out or backtrack(i - 1, j - 1, letters[1:])  # -1, -1
-            if j + 1 < m:
-                out = out or backtrack(i, j + 1, letters[1:])  # 0, +1
-            if j > 0:
-                out = out or backtrack(i, j - 1, letters[1:])  # 0, -1
+            if row + 1 < row_count:
+                out = out or backtrack(row + 1, column, remaining_letters[1:])
+                if column + 1 < column_count:
+                    out = out or backtrack(row + 1, column + 1, remaining_letters[1:])
+                if column > 0:
+                    out = out or backtrack(row + 1, column - 1, remaining_letters[1:])
+            if row > 0:
+                out = out or backtrack(row - 1, column, remaining_letters[1:])
+                if column + 1 < column_count:
+                    out = out or backtrack(row - 1, column + 1, remaining_letters[1:])
+                if column > 0:
+                    out = out or backtrack(row - 1, column - 1, remaining_letters[1:])
+            if column + 1 < column_count:
+                out = out or backtrack(row, column + 1, remaining_letters[1:])
+            if column > 0:
+                out = out or backtrack(row, column - 1, remaining_letters[1:])
 
-            # reset board values
-            self.board[i][j] = temp
-            if self.board[i][j] != letters[0]:
+            self.board[row][column] = temp
+            if self.board[row][column] != remaining_letters[0]:
                 self.skips += 1
 
-            # if path found update path, skipped
             if out:
-                path.append((i, j))
-                if self.board[i][j] != letters[0]:
-                    skipped.append((i, j))
+                path.append((row, column))
+                if self.board[row][column] != remaining_letters[0]:
+                    skipped.append((row, column))
             return out
 
         best = 0
         out = ([], 0, [])
-        # Iterate over all starting positions
-        for i in range(n):
-            for j in range(m):
+        for row in range(row_count):
+            for column in range(column_count):
                 self.skips = skips
                 path = []
                 skipped = []
-                # Singleton words
-                if self.board[i][j] == word:
+                if self.board[row][column] == word:
                     value = (
-                        self.letterMultipliers[(i, j)]
-                        * self.wordMultipliers[(i, j)]
+                        self.letter_multipliers[(row, column)]
+                        * self.word_multipliers[(row, column)]
                         * LETTERS_AND_VALUES[word[0].lower()]
                     )
                     if value > best:
-                        out = ([(i, j)], value, [])
+                        out = ([(row, column)], value, [])
                         best = value
-                # Non-singleton words
-                if self.board[i][j] == word[0]:
-                    if backtrack(i, j, word):
-                        wordMultiplier = reduce(
-                            lambda acc, cur: acc * self.wordMultipliers[cur], path, 1
+                if self.board[row][column] == word[0]:
+                    if backtrack(row, column, word):
+                        word_multiplier = reduce(
+                            lambda accumulator, current: accumulator
+                            * self.word_multipliers[current],
+                            path,
+                            1,
                         )
                         value = (
                             sum(
-                                self.letterMultipliers[x] * LETTERS_AND_VALUES[word[ind].lower()]
-                                for ind, x in enumerate(path[::-1])
+                                self.letter_multipliers[cell]
+                                * LETTERS_AND_VALUES[word[letter_index].lower()]
+                                for letter_index, cell in enumerate(path[::-1])
                             )
-                            * wordMultiplier
+                            * word_multiplier
                         )
                         if value > best:
                             out = (path, value, skipped)
                             best = value
         return out
 
-    # returns (best word, value, path, skipped)
-    def bestWord(self, skips=0):
-        curBest = ("", 0, [], [])
-        curVal = 0
-        for _, word in self.wordValues:
-            path, actualValue, skipped = self.boardContains(word, skips)
-            if path and actualValue > curVal:
-                curVal = actualValue
-                curBest = (word, actualValue, path, skipped)
-        return curBest
+    def best_word(self, skips=0):
+        current_best = ("", 0, [], [])
+        current_value = 0
+        for _, word in self.word_values:
+            path, actual_value, skipped = self.board_contains(word, skips)
+            if path and actual_value > current_value:
+                current_value = actual_value
+                current_best = (word, actual_value, path, skipped)
+        return current_best
 
-    def addMultiplier(self, i, j, m, word):
+    def add_multiplier(self, row, column, multiplier, word):
         if word:
-            self.wordMultipliers[(i, j)] = m
+            self.word_multipliers[(row, column)] = multiplier
         else:
-            self.letterMultipliers[(i, j)] = m
+            self.letter_multipliers[(row, column)] = multiplier
         self.recalculate()
 
-    def removeMultiplier(self, i, j):
-        self.wordMultipliers[(i, j)] = 1
-        self.letterMultipliers[(i, j)] = 1
+    def remove_multiplier(self, i, j):
+        self.word_multipliers[(i, j)] = 1
+        self.letter_multipliers[(i, j)] = 1
         self.recalculate()
 
 
 if __name__ == "__main__":
     # Read board and create wordboard
-    board = [[c.lower() for c in input()] for _ in range(5)]
-    wb = WordBoard()
-    wb.setBoard(board)
+    board = [[character.lower() for character in input()] for _ in range(5)]
+    word_board = WordBoard()
+    word_board.set_board(board)
 
     # Find best words
-    wg = wb.bestWord()  # no swaps
-    wgS1 = wb.bestWord(1)  # one swap
-    wgS2 = wb.bestWord(2)  # two swaps
+    best_word_with_no_swaps = word_board.best_word()  # no swaps
+    best_word_with_one_swap = word_board.best_word(1)  # one swap
+    best_word_with_two_swaps = word_board.best_word(2)  # two swaps
 
     # x, y = map(int, input().split())
     # wgXY = wb.generateWords(x=x, y=y)
 
-    print("No swaps:", (wg))
-    print("One swap:", (wgS1))
-    print("Two swaps:", (wgS2))
+    print("No swaps:", best_word_with_no_swaps)
+    print("One swap:", best_word_with_one_swap)
+    print("Two swaps:", best_word_with_two_swaps)
