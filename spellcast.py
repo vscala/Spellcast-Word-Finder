@@ -40,7 +40,9 @@ class WordBoard:
     def recalculate(self):
         max_global_multiplier = max(self.word_multipliers.values(), default=1)
         max_character_multiplier = defaultdict(lambda: 1)
-        for row, column in product(range(5), range(5)):
+        board_row_count = 5
+        board_column_count = 5
+        for row, column in product(range(board_row_count), range(board_column_count)):
             max_character_multiplier[self.board[row][column]] = max(
                 max_character_multiplier[self.board[row][column]],
                 max_global_multiplier,
@@ -52,16 +54,20 @@ class WordBoard:
             for letter, val in LETTERS_AND_VALUES.items()
         }
         self.board_value = {}
-        for row, column in product(range(5), range(5)):
+        for row, column in product(range(board_row_count), range(board_column_count)):
             self.board_value[(row, column)] = self.letter_values[
                 self.board[row][column].lower()
             ]
 
+        long_word_bonus_points = 10
+        long_word_minimum_letter_count = 6
         self.calculate_value = lambda word: sum(
             self.letter_values[character.lower()]
             for character in word
             if character.lower() in LETTERS_AND_VALUES
-        ) + (10 if len(word) > 6 else 0)
+        ) + (
+            long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
+        )
 
         self.word_values = [(self.calculate_value(word), word) for word in self.words]
         self.word_values.sort(reverse=True)
@@ -180,9 +186,9 @@ class WordBoard:
             self.letter_multipliers[(row, column)] = multiplier
         self.recalculate()
 
-    def remove_multiplier(self, i, j):
-        self.word_multipliers[(i, j)] = 1
-        self.letter_multipliers[(i, j)] = 1
+    def remove_multiplier(self, row, column):
+        self.word_multipliers[(row, column)] = 1
+        self.letter_multipliers[(row, column)] = 1
         self.recalculate()
 
 
