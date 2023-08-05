@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 from functools import reduce
-from itertools import chain, product
+from itertools import product
 
 LETTERS_AND_VALUES = {
     "a": 1,
