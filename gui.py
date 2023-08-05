@@ -1,10 +1,55 @@
+"""
+This module provides a graphical user interface (GUI) application for the Spellcast Word Finder.
+
+It utilizes the tkinter library for creating the GUI elements and interacts with the
+Spellcast WordBoard class to generate words based on user input.
+
+Classes:
+    SpellcastApp: Represents the main application class for the Spellcast Word Finder.
+
+Functions:
+    None
+
+Usage:
+    To use this module, create an instance of the SpellcastApp class and run the application.
+
+Example:
+    import tkinter as tk
+    from spellcast_app import SpellcastApp
+
+    if __name__ == "__main__":
+        root = tk.Tk()
+        app = SpellcastApp(root)
+        root.mainloop()
+"""
+
 import tkinter as tk
 import tkinter.font as tkFont
 from spellcast import WordBoard
 
 
 class SpellcastApp:
+    """
+    A class representing the Spellcast Word Finder application.
+
+    Attributes:
+        word_board (WordBoard): An instance of the WordBoard class.
+
+    Methods:
+        __init__(self, app_window): Initializes the SpellcastApp object.
+        on_validate(new_value, row, column): Validates the input in the entry fields.
+        generate_words_command(self): Generates words based on the input values.
+        add_multiplier(self, row, col, word=False): Adds a multiplier to a specific cell.
+        remove_multiplier(self, row, col): Removes a multiplier from a specific cell.
+    """
+
     def __init__(self, app_window):
+        """
+        Initializes the SpellcastApp object.
+
+        Args:
+            app_window (tk.Tk): The main application window.
+        """
         self.word_board = WordBoard()
 
         app_window.title("Spellcast Word Finder")
@@ -28,6 +73,17 @@ class SpellcastApp:
         self.labels = []
 
         def on_validate(new_value, row, column):
+            """
+            Validates the input in the entry fields.
+
+            Args:
+                new_value (str): The new value entered in the entry field.
+                row (int): The row index of the entry field.
+                column (int): The column index of the entry field.
+
+            Returns:
+                bool: True if the input is valid, False otherwise.
+            """
             row, column = map(int, (row, column))
             index = (row * 5 + column + 1) % 25
             if len(new_value) == 1:
@@ -83,7 +139,34 @@ class SpellcastApp:
         button["command"] = self.generate_words_command
 
     class LabelHover:
+        """
+        A class representing the hover effect for labels.
+
+        Attributes:
+            label (tk.Label): The label to apply the hover effect to.
+            path (str): The path of the word.
+            skipped (list): The list of skipped cells in the word.
+            line_inputs (list): The list of entry fields.
+            values (list): The list of StringVars representing the values in the entry fields.
+            word (str): The word associated with the label.
+
+        Methods:
+            hover(self): Applies the hover effect to the label.
+            unhover(self): Removes the hover effect from the label.
+        """
+
         def __init__(self, label, path, skipped, line_inputs, values, word):
+            """
+            Initializes the LabelHover object.
+
+            Args:
+                label (tk.Label): The label to apply the hover effect to.
+                path (str): The path of the word.
+                skipped (list): The list of skipped cells in the word.
+                line_inputs (list): The list of entry fields.
+                values (list): The list of StringVars representing the values in the entry fields.
+                word (str): The word associated with the label.
+            """
             self.label = label
             self.path = path
             self.skipped = skipped
@@ -98,6 +181,9 @@ class SpellcastApp:
             self.word = word
 
         def hover(self):
+            """
+            Applies the hover effect to the label.
+            """
             for (i, j), c in zip(self.path[::-1], self.word):
                 entry_index = i * 5 + j
                 self.line_inputs[entry_index].configure(
@@ -121,6 +207,9 @@ class SpellcastApp:
                 )
 
         def unhover(self):
+            """
+            Removes the hover effect from the label.
+            """
             for i, j in self.path + self.skipped:
                 entry_index = i * 5 + j
                 self.line_inputs[entry_index].configure(
@@ -133,6 +222,9 @@ class SpellcastApp:
                 self.values[i][j].set(self.temporary[i][j])
 
     def generate_words_command(self):
+        """
+        Generates words based on the input values.
+        """
         board = [[v.get().lower() for v in line] for line in self.values]
         self.word_board.set_board(board)
 
@@ -150,9 +242,24 @@ class SpellcastApp:
             )
 
     def add_multiplier(self, row, col, word=False):
+        """
+        Adds a multiplier to a specific cell.
+
+        Args:
+            row (int): The row index of the cell.
+            col (int): The column index of the cell.
+            word (bool): Whether the multiplier is for a word or a letter. Default is False.
+        """
         self.word_board.add_multiplier(row, col, 1)
 
     def remove_multiplier(self, row, col):
+        """
+        Removes a multiplier from a specific cell.
+
+        Args:
+            row (int): The row index of the cell.
+            col (int): The column index of the cell.
+        """
         self.word_board.remove_multiplier(row, col)
 
 

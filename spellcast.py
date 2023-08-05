@@ -1,6 +1,42 @@
+"""
+This module represents a word board game. It provides a class called `WordBoard`
+that manages the logic for the game. The `WordBoard` class has various methods
+for setting up the game board, finding the best word that can be formed on the board,
+adding and removing multipliers, and performing preliminary checks for word validity.
+
+Attributes:
+    - `words` (list): A list of words loaded from the "words.txt" file.
+    - `letter_values` (dict): A dictionary containing letter values considering multipliers.
+    - `board_value` (dict): A dictionary containing values for each cell on the board.
+
+Methods:
+    - `__init__()`: Initializes a `WordBoard` instance by reading words from a file
+    and initializing various attributes needed for managing the game board.
+    - `recalculate()`: Recalculates letter values and board values based on the 
+    current state of the board.
+    - `set_board(board)`: Sets the game board and recalculates attributes based
+    on the new board configuration.
+    - `precheck(word)`: Performs a preliminary check for word validity
+    by checking if the required letters for the word are available on the board.
+    - `board_contains(word, skips=0)`: Checks if the board contains
+    a given word, considering skips and multipliers.
+    - `best_word(skips=0)`: Finds the highest scoring word that can be
+    formed on the board, considering skips and multipliers.
+    - `add_multiplier(row, column, multiplier, word)`: Adds a multiplier
+    to a specific cell on the board and updates multipliers.
+    - `remove_multiplier(row, column)`: Removes multipliers from a specific
+    cell on the board and recalculates attributes.
+
+Usage:
+    - Create an instance of the `WordBoard` class.
+    - Set the game board using the `set_board()` method.
+    - Find the best words that can be formed on the board using the `best_word()` method.
+    - Add or remove multipliers using the `add_multiplier()` and `remove_multiplier()` methods.
+"""
+
 from collections import Counter, defaultdict
 from functools import reduce
-from itertools import chain, product
+from itertools import product
 
 LETTERS_AND_VALUES = {
     "a": 1,
@@ -33,14 +69,39 @@ LETTERS_AND_VALUES = {
 
 
 class WordBoard:
+    """
+    A class representing a word board game.
+
+    This class manages the logic for a word board game, where players try to form words using
+    letters on the board with different multipliers applied.
+
+    Attributes:
+        words (list): A list of words loaded from the "words.txt" file.
+        letter_values (dict): A dictionary containing letter values considering multipliers.
+        board_value (dict): A dictionary containing values for each cell on the board.
+    """
+
     def __init__(self):
+        """
+        Initializes a WordBoard instance.
+
+        Reads words from a file and initializes various attributes needed for
+        managing the game board.
+        """
         with open("words.txt", encoding="utf-8") as file:
             self.words = [word[:-1] for word in file.readlines()]
 
     def recalculate(self):
+        """
+        Recalculate board-related attributes.
+
+        This method recalculates letter values and board values based on the current state of the board.
+        """
         max_global_multiplier = max(self.word_multipliers.values(), default=1)
         max_character_multiplier = defaultdict(lambda: 1)
-        for row, column in product(range(5), range(5)):
+        board_row_count = 5
+        board_column_count = 5
+        for row, column in product(range(board_row_count), range(board_column_count)):
             max_character_multiplier[self.board[row][column]] = max(
                 max_character_multiplier[self.board[row][column]],
                 max_global_multiplier,
@@ -52,21 +113,33 @@ class WordBoard:
             for letter, val in LETTERS_AND_VALUES.items()
         }
         self.board_value = {}
-        for row, column in product(range(5), range(5)):
+        for row, column in product(range(board_row_count), range(board_column_count)):
             self.board_value[(row, column)] = self.letter_values[
                 self.board[row][column].lower()
             ]
 
+        long_word_bonus_points = 10
+        long_word_minimum_letter_count = 6
         self.calculate_value = lambda word: sum(
             self.letter_values[character.lower()]
             for character in word
             if character.lower() in LETTERS_AND_VALUES
-        ) + (10 if len(word) > 6 else 0)
+        ) + (
+            long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
+        )
 
         self.word_values = [(self.calculate_value(word), word) for word in self.words]
         self.word_values.sort(reverse=True)
 
     def set_board(self, board):
+        """
+        Set the game board.
+
+        Args:
+            board (list of lists): A 2D list representing the game board.
+
+        Sets up the game board and recalculates attributes based on the new board configuration.
+        """
         self.board = board
         self.row_count = len(board)
         self.column_count = len(board[0])
@@ -77,6 +150,17 @@ class WordBoard:
         self.recalculate()
 
     def precheck(self, word):
+        """
+        Perform a preliminary check for word validity.
+
+        Args:
+            word (str): The word to be checked.
+
+        Returns:
+            bool: True if the word can be formed on the current board, False otherwise.
+
+        Checks if the required letters for the word are available on the board.
+        """
         word_count = Counter(word)
         for character in word_count:
             if word_count[character] > self.total_count[character]:
@@ -84,6 +168,18 @@ class WordBoard:
         return True
 
     def board_contains(self, word, skips=0):
+        """
+        Check if the board contains a given word.
+
+        Args:
+            word (str): The word to check for.
+            skips (int, optional): The number of letters that can be skipped. Default is 0.
+
+        Returns:
+            tuple: A tuple containing the path of letters forming the word, its value, and skipped letters.
+
+        Checks if the board contains the specified word considering skips and multipliers.
+        """
         row_count, column_count = self.row_count, self.column_count
         if not skips and not self.precheck(word):
             return ([], 0, [])
@@ -164,6 +260,17 @@ class WordBoard:
         return out
 
     def best_word(self, skips=0):
+        """
+        Find the best word that can be formed on the board.
+
+        Args:
+            skips (int, optional): The number of letters that can be skipped. Default is 0.
+
+        Returns:
+            tuple: A tuple containing the best word, its value, path, and skipped letters.
+
+        Finds the highest scoring word that can be formed on the board, considering skips and multipliers.
+        """
         current_best = ("", 0, [], [])
         current_value = 0
         for _, word in self.word_values:
@@ -174,15 +281,35 @@ class WordBoard:
         return current_best
 
     def add_multiplier(self, row, column, multiplier, word):
+        """
+        Add a multiplier to a specific cell on the board.
+
+        Args:
+            row (int): The row of the cell to which the multiplier is applied.
+            column (int): The column of the cell to which the multiplier is applied.
+            multiplier (int): The multiplier value to be added.
+            word (bool): True if the multiplier is for a word, False if it's for a letter.
+
+        Updates multipliers and recalculates attributes based on the new multiplier.
+        """
         if word:
             self.word_multipliers[(row, column)] = multiplier
         else:
             self.letter_multipliers[(row, column)] = multiplier
         self.recalculate()
 
-    def remove_multiplier(self, i, j):
-        self.word_multipliers[(i, j)] = 1
-        self.letter_multipliers[(i, j)] = 1
+    def remove_multiplier(self, row, column):
+        """
+        Remove multipliers from a specific cell on the board.
+
+        Args:
+            row (int): The row of the cell from which the multipliers are removed.
+            column (int): The column of the cell from which the multipliers are removed.
+
+        Resets multipliers for the specified cell and recalculates attributes.
+        """
+        self.word_multipliers[(row, column)] = 1
+        self.letter_multipliers[(row, column)] = 1
         self.recalculate()
 
 
