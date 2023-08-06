@@ -133,13 +133,14 @@ class WordBoard:
         long_word_minimum_letter_count = 6
 
         def calculate_value(word):
-            sum(
+            value = sum(
                 letter_values[character.lower()]
                 for character in word
                 if character.lower() in LETTERS_AND_VALUES
             ) + (
-                long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
-            )
+                        long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
+                    )
+            return value
 
         self.word_values = [(calculate_value(word), word) for word in self.words_set]
         self.word_values.sort(reverse=True)
