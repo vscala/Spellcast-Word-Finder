@@ -76,17 +76,14 @@ class WordBoard:
     letters on the board with different multipliers applied.
 
     Attributes:
-        words (set): A set of words loaded from the "words.txt" file.
-        letter_values (dict): A dictionary containing letter values considering multipliers.
+        words_set (set): A set of words loaded from the "words.txt" file.
         letter_multipliers (defaultdict): A dictionary containing letter multipliers.
         word_multipliers (defaultdict): A dictionary containing word multipliers.
         board (list): A 2D list representing the game board.
         row_count (int): Number of rows on the board.
         column_count (int): Number of columns on the board.
         total_count (Counter): Count of each letter available on the board.
-        board_value (dict): A dictionary containing values for each cell on the board.
         word_values (list): A list of tuples containing word values and words.
-        calculate_value (function): A function to calculate the value of a word.
         skips (int): Number of letters that can be skipped in forming a word.
     """
 
@@ -97,21 +94,18 @@ class WordBoard:
         Reads words from a file and initializes various attributes needed for
         managing the game board.
         """
-        self.words = set()
-        self.letter_values = {}
+        self.words_set = set()
         self.letter_multipliers = defaultdict(lambda: 1)
         self.word_multipliers = defaultdict(lambda: 1)
         self.board = []
         self.row_count = 0
         self.column_count = 0
         self.total_count = Counter()
-        self.board_value = {}
         self.word_values = []
-        self.calculate_value = None
         self.skips = 0
 
         with open("words.txt", encoding="utf-8") as file:
-            self.words = [word[:-1] for word in file.readlines()]
+            self.words_set = {word[:-1] for word in file.readlines()}
 
     def recalculate(self):
         """
@@ -130,27 +124,24 @@ class WordBoard:
                 self.letter_multipliers[(row, column)],
             )
 
-        self.letter_values = {
+        letter_values = {
             letter: val * max_character_multiplier[letter]
             for letter, val in LETTERS_AND_VALUES.items()
         }
-        self.board_value = {}
-        for row, column in product(range(board_row_count), range(board_column_count)):
-            self.board_value[(row, column)] = self.letter_values[
-                self.board[row][column].lower()
-            ]
 
         long_word_bonus_points = 10
         long_word_minimum_letter_count = 6
-        self.calculate_value = lambda word: sum(
-            self.letter_values[character.lower()]
-            for character in word
-            if character.lower() in LETTERS_AND_VALUES
-        ) + (
-            long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
-        )
 
-        self.word_values = [(self.calculate_value(word), word) for word in self.words]
+        def calculate_value(word):
+            sum(
+                letter_values[character.lower()]
+                for character in word
+                if character.lower() in LETTERS_AND_VALUES
+            ) + (
+                long_word_bonus_points if len(word) > long_word_minimum_letter_count else 0
+            )
+
+        self.word_values = [(calculate_value(word), word) for word in self.words_set]
         self.word_values.sort(reverse=True)
 
     def set_board(self, game_board):
@@ -158,7 +149,7 @@ class WordBoard:
         Set the game board.
 
         Args:
-            board (list of lists): A 2D list representing the game board.
+            game_board (list of lists): A 2D list representing the game board.
 
         Sets up the game board and recalculates attributes based on the new board configuration.
         """
@@ -204,45 +195,45 @@ class WordBoard:
         """
         row_count, column_count = self.row_count, self.column_count
         if not skips and not self.precheck(word):
-            return ([], 0, [])
+            return [], 0, []
 
-        def backtrack(row, column, remaining_letters):
+        def backtrack(starting_row, starting_column, remaining_letters):
             if not remaining_letters:
                 return True
-            if self.board[row][column] != remaining_letters[0]:
-                if self.skips and self.board[row][column] != ".":
+            if self.board[starting_row][starting_column] != remaining_letters[0]:
+                if self.skips and self.board[starting_row][starting_column] != ".":
                     self.skips -= 1
                 else:
                     return False
 
-            temp, self.board[row][column] = self.board[row][column], "."
-            out = False
-            if row + 1 < row_count:
-                out = out or backtrack(row + 1, column, remaining_letters[1:])
-                if column + 1 < column_count:
-                    out = out or backtrack(row + 1, column + 1, remaining_letters[1:])
-                if column > 0:
-                    out = out or backtrack(row + 1, column - 1, remaining_letters[1:])
-            if row > 0:
-                out = out or backtrack(row - 1, column, remaining_letters[1:])
-                if column + 1 < column_count:
-                    out = out or backtrack(row - 1, column + 1, remaining_letters[1:])
-                if column > 0:
-                    out = out or backtrack(row - 1, column - 1, remaining_letters[1:])
-            if column + 1 < column_count:
-                out = out or backtrack(row, column + 1, remaining_letters[1:])
-            if column > 0:
-                out = out or backtrack(row, column - 1, remaining_letters[1:])
+            temp, self.board[starting_row][starting_column] = self.board[starting_row][starting_column], "."
+            end_loop = False
+            if starting_row + 1 < row_count:
+                end_loop = end_loop or backtrack(starting_row + 1, starting_column, remaining_letters[1:])
+                if starting_column + 1 < column_count:
+                    end_loop = end_loop or backtrack(starting_row + 1, starting_column + 1, remaining_letters[1:])
+                if starting_column > 0:
+                    end_loop = end_loop or backtrack(starting_row + 1, starting_column - 1, remaining_letters[1:])
+            if starting_row > 0:
+                end_loop = end_loop or backtrack(starting_row - 1, starting_column, remaining_letters[1:])
+                if starting_column + 1 < column_count:
+                    end_loop = end_loop or backtrack(starting_row - 1, starting_column + 1, remaining_letters[1:])
+                if starting_column > 0:
+                    end_loop = end_loop or backtrack(starting_row - 1, starting_column - 1, remaining_letters[1:])
+            if starting_column + 1 < column_count:
+                end_loop = end_loop or backtrack(starting_row, starting_column + 1, remaining_letters[1:])
+            if starting_column > 0:
+                end_loop = end_loop or backtrack(starting_row, starting_column - 1, remaining_letters[1:])
 
-            self.board[row][column] = temp
-            if self.board[row][column] != remaining_letters[0]:
+            self.board[starting_row][starting_column] = temp
+            if self.board[starting_row][starting_column] != remaining_letters[0]:
                 self.skips += 1
 
-            if out:
-                path.append((row, column))
-                if self.board[row][column] != remaining_letters[0]:
-                    skipped.append((row, column))
-            return out
+            if end_loop:
+                path.append((starting_row, starting_column))
+                if self.board[starting_row][starting_column] != remaining_letters[0]:
+                    skipped.append((starting_row, starting_column))
+            return end_loop
 
         best = 0
         out = ([], 0, [])
@@ -253,9 +244,9 @@ class WordBoard:
                 skipped = []
                 if self.board[row][column] == word:
                     value = (
-                        self.letter_multipliers[(row, column)]
-                        * self.word_multipliers[(row, column)]
-                        * LETTERS_AND_VALUES[word[0].lower()]
+                            self.letter_multipliers[(row, column)]
+                            * self.word_multipliers[(row, column)]
+                            * LETTERS_AND_VALUES[word[0].lower()]
                     )
                     if value > best:
                         out = ([(row, column)], value, [])
@@ -263,18 +254,17 @@ class WordBoard:
                 if self.board[row][column] == word[0]:
                     if backtrack(row, column, word):
                         word_multiplier = reduce(
-                            lambda accumulator, current: accumulator
-                            * self.word_multipliers[current],
+                            lambda accumulator, current: accumulator * self.word_multipliers[current],
                             path,
                             1,
                         )
                         value = (
-                            sum(
-                                self.letter_multipliers[cell]
-                                * LETTERS_AND_VALUES[word[letter_index].lower()]
-                                for letter_index, cell in enumerate(path[::-1])
-                            )
-                            * word_multiplier
+                                sum(
+                                    self.letter_multipliers[cell]
+                                    * LETTERS_AND_VALUES[word[letter_index].lower()]
+                                    for letter_index, cell in enumerate(path[::-1])
+                                )
+                                * word_multiplier
                         )
                         if value > best:
                             out = (path, value, skipped)
