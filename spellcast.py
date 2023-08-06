@@ -76,9 +76,18 @@ class WordBoard:
     letters on the board with different multipliers applied.
 
     Attributes:
-        words (list): A list of words loaded from the "words.txt" file.
+        words (set): A set of words loaded from the "words.txt" file.
         letter_values (dict): A dictionary containing letter values considering multipliers.
+        letter_multipliers (defaultdict): A dictionary containing letter multipliers.
+        word_multipliers (defaultdict): A dictionary containing word multipliers.
+        board (list): A 2D list representing the game board.
+        row_count (int): Number of rows on the board.
+        column_count (int): Number of columns on the board.
+        total_count (Counter): Count of each letter available on the board.
         board_value (dict): A dictionary containing values for each cell on the board.
+        word_values (list): A list of tuples containing word values and words.
+        calculate_value (function): A function to calculate the value of a word.
+        skips (int): Number of letters that can be skipped in forming a word.
     """
 
     def __init__(self):
@@ -88,6 +97,19 @@ class WordBoard:
         Reads words from a file and initializes various attributes needed for
         managing the game board.
         """
+        self.words = set()
+        self.letter_values = {}
+        self.letter_multipliers = defaultdict(lambda: 1)
+        self.word_multipliers = defaultdict(lambda: 1)
+        self.board = []
+        self.row_count = 0
+        self.column_count = 0
+        self.total_count = Counter()
+        self.board_value = {}
+        self.word_values = []
+        self.calculate_value = None
+        self.skips = 0
+
         with open("words.txt", encoding="utf-8") as file:
             self.words = [word[:-1] for word in file.readlines()]
 
@@ -131,7 +153,7 @@ class WordBoard:
         self.word_values = [(self.calculate_value(word), word) for word in self.words]
         self.word_values.sort(reverse=True)
 
-    def set_board(self, board):
+    def set_board(self, game_board):
         """
         Set the game board.
 
@@ -140,10 +162,10 @@ class WordBoard:
 
         Sets up the game board and recalculates attributes based on the new board configuration.
         """
-        self.board = board
-        self.row_count = len(board)
-        self.column_count = len(board[0])
-        self.total_count = Counter(cell for row in board for cell in row)
+        self.board = game_board
+        self.row_count = len(game_board)
+        self.column_count = len(game_board[0])
+        self.total_count = Counter(cell for row in game_board for cell in row)
 
         self.word_multipliers = defaultdict(lambda: 1)
         self.letter_multipliers = defaultdict(lambda: 1)
