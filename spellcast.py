@@ -37,6 +37,7 @@ Usage:
 from collections import Counter, defaultdict
 from functools import reduce
 from itertools import product
+import threading
 
 LETTERS_AND_VALUES = {
     "a": 1,
@@ -331,15 +332,16 @@ if __name__ == "__main__":
     board = [[character.lower() for character in input()] for _ in range(5)]
     word_board = WordBoard()
     word_board.set_board(board)
+    def findBestWords():
+        # Find best words
+        best_word_with_no_swaps = word_board.best_word()  # no swaps
+        print("No swaps:\n", best_word_with_no_swaps)
+        best_word_with_one_swap = word_board.best_word(1)  # one swap
+        print("One swap:\n", best_word_with_one_swap)
+        best_word_with_two_swaps = word_board.best_word(2)  # two swaps
+        print("Two swaps:\n", best_word_with_two_swaps)
+    
+    threading.Thread(target=findBestWords).start()
 
-    # Find best words
-    best_word_with_no_swaps = word_board.best_word()  # no swaps
-    best_word_with_one_swap = word_board.best_word(1)  # one swap
-    best_word_with_two_swaps = word_board.best_word(2)  # two swaps
-
-    # x, y = map(int, input().split())
-    # wgXY = wb.generateWords(x=x, y=y)
-
-    print("No swaps:", best_word_with_no_swaps)
-    print("One swap:", best_word_with_one_swap)
-    print("Two swaps:", best_word_with_two_swaps)
+    #x, y = map(int, input().split())
+    #wgXY = word_board.generateWords(x=x, y=y)
