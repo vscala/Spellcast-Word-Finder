@@ -26,7 +26,7 @@ Example:
 import tkinter as tk
 import tkinter.font as tkFont
 from spellcast import WordBoard
-
+import threading
 
 class SpellcastApp:
     """
@@ -71,6 +71,7 @@ class SpellcastApp:
         ]
         self.line_inputs = []
         self.labels = []
+        self.btn_generate = tk.Button(app_window)
 
         def on_validate(new_value, row, column):
             """
@@ -84,6 +85,10 @@ class SpellcastApp:
             Returns:
                 bool: True if the input is valid, False otherwise.
             """
+            # new_value only alphabet characters
+            if not new_value.isalpha() and new_value != "":
+                return False
+            
             row, column = map(int, (row, column))
             index = (row * 5 + column + 1) % 25
             if len(new_value) == 1:
@@ -118,6 +123,15 @@ class SpellcastApp:
                     highlightcolor="black",
                     font=("Roboto", 16),
                 )
+                def navigateEntry(idx):
+                    self.line_inputs[idx].focus_set()
+                    self.line_inputs[idx].select_range(0, "end")
+
+                # when the user presses arrow keys, the focus is moved to the next entry
+                entry.bind("<Left>", lambda _, row=row, column=column: navigateEntry((row * 5 + column - 1) % 25))
+                entry.bind("<Right>", lambda _, row=row, column=column: navigateEntry((row * 5 + column + 1) % 25))
+                entry.bind("<Up>", lambda _, row=row, column=column: navigateEntry(((row - 1) * 5 + column) % 25))
+                entry.bind("<Down>", lambda _, row=row, column=column: navigateEntry(((row + 1) * 5 + column) % 25))
                 self.line_inputs.append(entry)
 
         for row in range(3):
@@ -129,14 +143,13 @@ class SpellcastApp:
             label.place(x=320, y=80 + row * 30, width=250, height=25)
             self.labels.append(label)
 
-        button = tk.Button(app_window)
-        button["bg"] = "#e9e9ed"
-        button["font"] = tkFont.Font(family="Times", size=10)
-        button["fg"] = "#000000"
-        button["justify"] = "center"
-        button["text"] = "Generate Words"
-        button.place(x=x_offset, y=y_offset + 160, width=160, height=25)
-        button["command"] = self.generate_words_command
+        self.btn_generate["bg"] = "#e9e9ed"
+        self.btn_generate["font"] = tkFont.Font(family="Times", size=10)
+        self.btn_generate["fg"] = "#000000"
+        self.btn_generate["justify"] = "center"
+        self.btn_generate["text"] = "Generate Words"
+        self.btn_generate.place(x=x_offset, y=y_offset + 160, width=160, height=25)
+        self.btn_generate["command"] = lambda: threading.Thread(target=self.generate_words_command).start()
 
     class LabelHover:
         """
@@ -186,13 +199,30 @@ class SpellcastApp:
             """
             for (i, j), c in zip(self.path[::-1], self.word):
                 entry_index = i * 5 + j
-                self.line_inputs[entry_index].configure(
-                    highlightbackground="blue",
-                    highlightcolor="blue",
-                    background="blue",
-                    font=("Roboto", 20, tkFont.BOLD),
-                    fg="white",
-                )
+                # if first letter of word, highlight in pinkpurple
+                if (i, j) == self.path[-1]:
+                    self.line_inputs[entry_index].configure(
+                        highlightbackground="#F522EE",
+                        highlightcolor="#F522EE",
+                        background="#43C6E2",
+                        font=("Roboto", 20, tkFont.BOLD),
+                    )
+                elif (i, j) == self.path[0]:
+                    self.line_inputs[entry_index].configure(
+                        highlightbackground="purple",
+                        highlightcolor="purple",
+                        background="#43C6E2",
+                        font=("Roboto", 20, tkFont.BOLD),
+                    )
+                else:
+                    self.line_inputs[entry_index].configure(
+                        highlightbackground="#43C6E2",
+                        highlightcolor="#43C6E2",
+                        background="#43C6E2",
+                        font=("Roboto", 20, tkFont.BOLD),
+                        fg="white",
+                    )
+               
                 if (i, j) in self.skip_set:
                     self.values[i][j].set(c)
 
@@ -225,21 +255,31 @@ class SpellcastApp:
         """
         Generates words based on the input values.
         """
+        word_label_prefix = ["No swaps", "One swap", "Two swaps"]
+        for i in range(3):
+            self.labels[i]["text"] = f"{word_label_prefix[i]}: Generating..."
+
+        self.btn_generate["text"] = "Generating..."
+        self.btn_generate['state'] = 'disabled'
+        for line_input in self.line_inputs:
+            line_input['state'] = 'disabled'
+
         board = [[v.get().lower() for v in line] for line in self.values]
+
+        for line_input in self.line_inputs:
+            line_input['state'] = 'normal'
+
         self.word_board.set_board(board)
 
-        words = [
-            self.word_board.best_word(i)
-            for i in range(3)  # (best word, value, path, skipped)
-        ]
-
-        word_label_prefix = ["No swaps", "One swap", "Two swaps"]
-
-        for i, word in enumerate(words):
-            self.labels[i]["text"] = f"{word_label_prefix[i]}: {word[:2]}"
+        for i in range(3):
+            best = self.word_board.best_word(i)
+            self.labels[i]["text"] = f"{word_label_prefix[i]}: {best[:2]}"
             self.LabelHover(
-                self.labels[i], word[2], word[3], self.line_inputs, self.values, word[0]
+                self.labels[i], best[2], best[3], self.line_inputs, self.values, best[0]
             )
+
+        self.btn_generate['state'] = 'normal'
+        self.btn_generate["text"] = "Generate Words"
 
     def add_multiplier(self, row, col, word=False):
         """
@@ -250,7 +290,7 @@ class SpellcastApp:
             col (int): The column index of the cell.
             word (bool): Whether the multiplier is for a word or a letter. Default is False.
         """
-        self.word_board.add_multiplier(row, col, 1)
+        self.word_board.add_multiplier(row, col, 1, word)
 
     def remove_multiplier(self, row, col):
         """
