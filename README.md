@@ -10,6 +10,29 @@ Attempts to find the best word in the discord activity (game) Spellcast
  - Will account for long word bonus
  - Hover over words to highlight them on the board
 
+
+## Requirements
+ - [Python 3.6+](https://www.python.org/downloads/)
+
+## Get started
+- 1. **Clone the repo**
+   ```sh
+    git clone <repo_url>
+   ```
+- 2. **Run as GUI**
+   ```sh
+    python gui.py
+   ```
+- 3. **Run as CLI**
+   ```sh
+    python spellcast.py
+    <insert 5:5 letters of board>
+    ex: abcde
+        asdaa
+        dasda
+        asdas
+        kolak
+   ```
 ## TODO
  - Add word/letter multipliers
  - Image Recognition
