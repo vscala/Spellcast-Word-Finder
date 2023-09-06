@@ -51,6 +51,7 @@ class SpellcastApp:
             app_window (tk.Tk): The main application window.
         """
         self.word_board = WordBoard()
+        self.app_window = app_window
 
         app_window.title("Spellcast Word Finder")
         width = 600
@@ -72,6 +73,7 @@ class SpellcastApp:
         self.line_inputs = []
         self.labels = []
         self.btn_generate = tk.Button(app_window)
+        self.btn_clear = tk.Button(app_window)
 
         def on_validate(new_value, row, column):
             """
@@ -150,6 +152,13 @@ class SpellcastApp:
         self.btn_generate["text"] = "Generate Words"
         self.btn_generate.place(x=x_offset, y=y_offset + 160, width=160, height=25)
         self.btn_generate["command"] = lambda: threading.Thread(target=self.generate_words_command).start()
+        self.btn_clear["bg"] = "#e9e9ed"
+        self.btn_clear["font"] = tkFont.Font(family="Times", size=10)
+        self.btn_clear["fg"] = "#000000"
+        self.btn_clear["justify"] = "center"
+        self.btn_clear["text"] = "Reset Window"
+        self.btn_clear.place(x=x_offset + 170, y=y_offset + 160, width=160, height=25)
+        self.btn_clear["command"] = lambda: threading.Thread(target=self.clear_text()).start()
 
     class LabelHover:
         """
@@ -280,6 +289,12 @@ class SpellcastApp:
 
         self.btn_generate['state'] = 'normal'
         self.btn_generate["text"] = "Generate Words"
+
+    def clear_text(self):
+        self.app_window.destroy()
+        root = tk.Tk()
+        self.app_window = SpellcastApp(root)
+        root.mainloop()
 
     def add_multiplier(self, row, col, word=False):
         """
